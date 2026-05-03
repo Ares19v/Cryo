@@ -1,0 +1,204 @@
+<Page x:Class="Cryo.DashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      mc:Ignorable="d" 
+      d:DesignHeight="700" d:DesignWidth="1000"
+      Title="DashboardPage" Background="#F4F7F9">
+
+    <Page.Resources>
+        <!-- Premium Gradient Accent -->
+        <LinearGradientBrush x:Key="PremiumAccent" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#00C6FF" Offset="0.0" />
+            <GradientStop Color="#0072FF" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <!-- Premium White Card with Shadow -->
+        <Style x:Key="PremiumCard" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="25" ShadowDepth="8" Opacity="0.03" Color="#000000" Direction="270" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Premium List Item with Hover Animation -->
+        <Style x:Key="AnimatedListItem" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="#F1F5F9" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Padding" Value="16,16" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F8FAFC" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="SensorListItemTemplate">
+            <Border Style="{StaticResource AnimatedListItem}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Name}" Foreground="#64748B" FontSize="14" FontWeight="Medium" VerticalAlignment="Center" />
+                    <!-- Gradient Text using OpacityMask -->
+                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center">
+                        <TextBlock.Foreground>
+                            <SolidColorBrush Color="#0072FF" />
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Margin="40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Text="System Telemetry" FontSize="34" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,32" />
+        
+        <!-- High Level Stats Grid -->
+        <Grid Grid.Row="1" Margin="0,0,0,32">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- CPU Temp Card -->
+            <Border Grid.Column="0" Style="{StaticResource PremiumCard}">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Text="CPU PACKAGE TEMP" Foreground="#94A3B8" FontSize="12" FontWeight="Bold" />
+                        <TextBlock Text="{Binding CpuTemperature}" Foreground="#0F172A" FontSize="48" FontWeight="Bold" Margin="0,16,0,0" />
+                    </StackPanel>
+                    <!-- Gradient Icon -->
+                    <TextBlock FontFamily="{DynamicResource SymbolThemeFontFamily}" Text="&#xE968;" FontSize="72" HorizontalAlignment="Right" VerticalAlignment="Bottom" Opacity="0.1" Margin="0,0,-8,-8">
+                        <TextBlock.Foreground>
+                            <StaticResource ResourceKey="PremiumAccent"/>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
+            </Border>
+
+            <!-- GPU Temp Card -->
+            <Border Grid.Column="2" Style="{StaticResource PremiumCard}">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Text="GPU TEMPERATURE" Foreground="#94A3B8" FontSize="12" FontWeight="Bold" />
+                        <TextBlock Text="{Binding GpuTemperature}" Foreground="#0F172A" FontSize="48" FontWeight="Bold" Margin="0,16,0,0" />
+                    </StackPanel>
+                    <TextBlock FontFamily="{DynamicResource SymbolThemeFontFamily}" Text="&#xE9A1;" FontSize="72" HorizontalAlignment="Right" VerticalAlignment="Bottom" Opacity="0.1" Margin="0,0,-8,-8">
+                        <TextBlock.Foreground>
+                            <StaticResource ResourceKey="PremiumAccent"/>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
+            </Border>
+            
+            <!-- CPU Load Card -->
+            <Border Grid.Column="4" Style="{StaticResource PremiumCard}">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Text="TOTAL CPU LOAD" Foreground="#94A3B8" FontSize="12" FontWeight="Bold" />
+                        <TextBlock Text="{Binding CpuLoad}" Foreground="#0F172A" FontSize="48" FontWeight="Bold" Margin="0,16,0,0" />
+                    </StackPanel>
+                    <TextBlock FontFamily="{DynamicResource SymbolThemeFontFamily}" Text="&#xE9D9;" FontSize="72" HorizontalAlignment="Right" VerticalAlignment="Bottom" Opacity="0.1" Margin="0,0,-8,-8">
+                        <TextBlock.Foreground>
+                            <StaticResource ResourceKey="PremiumAccent"/>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Detailed Lists -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Detailed Temperatures -->
+            <Border Grid.Column="0" Style="{StaticResource PremiumCard}" Padding="0" VerticalAlignment="Top">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="24,20" CornerRadius="16,16,0,0">
+                        <TextBlock Text="Detailed Temperatures" FontSize="16" FontWeight="Bold" Foreground="#1E293B" />
+                    </Border>
+                    
+                    <ScrollViewer Grid.Row="1" Margin="8,8,8,16">
+                        <ItemsControl ItemsSource="{Binding AllTemperatures}" ItemTemplate="{StaticResource SensorListItemTemplate}" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Active Fans & Loads -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="32" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Style="{StaticResource PremiumCard}" Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="24,20" CornerRadius="16,16,0,0">
+                            <TextBlock Text="Active Fans" FontSize="16" FontWeight="Bold" Foreground="#1E293B" />
+                        </Border>
+                        
+                        <ScrollViewer Grid.Row="1" Margin="8,8,8,16">
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding AllFans}" ItemTemplate="{StaticResource SensorListItemTemplate}" />
+                                <TextBlock Text="No active fans detected." Foreground="#94A3B8" FontStyle="Italic" Margin="16,24,16,16" HorizontalAlignment="Center" 
+                                           Visibility="{Binding AllFans.Count, Converter={x:Null}}" /> 
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+                
+                <Border Grid.Row="2" Style="{StaticResource PremiumCard}" Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="24,20" CornerRadius="16,16,0,0">
+                            <TextBlock Text="System Loads" FontSize="16" FontWeight="Bold" Foreground="#1E293B" />
+                        </Border>
+                        
+                        <ScrollViewer Grid.Row="1" Margin="8,8,8,16">
+                            <ItemsControl ItemsSource="{Binding AllLoads}" ItemTemplate="{StaticResource SensorListItemTemplate}" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Page>

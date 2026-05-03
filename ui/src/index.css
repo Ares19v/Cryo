@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cryo-bg: #F4F7F9;
+  --color-cryo-blue: #00A8E8;
+  --color-cryo-blue-dark: #0072FF;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cryo-bg);
+    color: #1E293B;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+}

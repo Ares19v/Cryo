@@ -1,0 +1,15 @@
+# Cryo System Dependencies
+# This project is built with .NET 8.0 and React.
+
+# Primary Frameworks
+dotnet-sdk==8.0
+nodejs>=18.0
+
+# Key Libraries (NuGet)
+Microsoft.Web.WebView2==1.0.*
+LibreHardwareMonitorLib==0.9.3
+
+# UI Frameworks
+framer-motion
+lucide-react
+tailwindcss

@@ -1,0 +1,24 @@
+# .NET / Visual Studio
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Node.js / React
+node_modules/
+dist/
+.env
+.DS_Store
+
+# WebView2
+*.exe.WebView2/
+EBWebView/
+
+# Build artifacts
+*.exe
+*.dll
+*.pdb
+*.msi
+*.nupkg
