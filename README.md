@@ -1,8 +1,6 @@
 # ❄️ Cryo Control Center
 
-**A Premium, Professional Hardware Utility for HP Omen Laptops.**
-
-![Cryo Logo](ui/public/logo.png)
+**A Hardware Utility for HP Omen Laptops.**
 
 Cryo is a high-performance system utility designed to bridge the gap between premium design and low-level hardware control. Built with a **React + Framer Motion** frontend and a **C# / .NET 8** backend using **WebView2**, Cryo provides real-time telemetry and advanced cooling profile management specifically for HP Omen hardware.
 
