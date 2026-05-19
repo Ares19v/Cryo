@@ -58,7 +58,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 ---
 *Created by [Ares19v](https://github.com/Ares19v)*
+
+---
+<p align="center">
+  Made by Devansh Tyagi @ 2026
+</p>
