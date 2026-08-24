@@ -27,6 +27,9 @@ cd /d "%~dp0"
 echo [✓] Running with Administrator Privileges.
 echo.
 
+:: Close any lingering running instance so file lock on Cryo.exe is released
+taskkill /F /IM Cryo.exe >nul 2>&1
+
 :: ── Step 1: Build React UI ───────────────────────────────────────────────────
 echo [1/3] Building React UI assets...
 cd ui
