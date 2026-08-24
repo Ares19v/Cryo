@@ -2,6 +2,9 @@
 setlocal EnableDelayedExpansion
 title Cryo Control Center — Launcher
 
+:: Ensure working directory is always the script's directory
+cd /d "%~dp0"
+
 echo.
 echo  ================================================
 echo    ❄️  CRYO CONTROL CENTER - LAUNCHER ❄️
@@ -12,9 +15,12 @@ echo.
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] Requesting Administrator privileges for kernel hardware access...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WorkingDirectory '%~dp0' -Verb RunAs"
     exit /b
 )
+
+:: Re-verify working directory in elevated session
+cd /d "%~dp0"
 
 echo [✓] Running with Administrator Privileges.
 echo.
@@ -32,7 +38,7 @@ if %errorlevel% neq 0 (
     pause
     exit /b %errorlevel%
 )
-cd ..
+cd /d "%~dp0"
 
 :: ── Step 2: Build .NET Host ──────────────────────────────────────────────────
 echo.
