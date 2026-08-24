@@ -11,7 +11,9 @@ echo    ❄️  CRYO CONTROL CENTER - LAUNCHER ❄️
 echo  ================================================
 echo.
 
-:: ── Step 0: Check for Administrator Elevation ────────────────────────────────
+:: ── Step 0: Unblock Files & Check Elevation ──────────────────────────────────
+powershell -NoProfile -Command "Get-ChildItem -Path '%~dp0' -Recurse | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
+
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] Requesting Administrator privileges for kernel hardware access...
@@ -56,6 +58,9 @@ xcopy /E /I /Y "ui\dist" "bin\Debug\net8.0-windows\ui\dist" >nul 2>&1
 
 if not exist "bin\Debug\net8.0-windows\OmenMon" mkdir "bin\Debug\net8.0-windows\OmenMon"
 xcopy /E /I /Y "bin\OmenMon" "bin\Debug\net8.0-windows\OmenMon" >nul 2>&1
+
+:: Unblock all binaries in output folder
+powershell -NoProfile -Command "Get-ChildItem -Path '%~dp0bin' -Recurse | Unblock-File -ErrorAction SilentlyContinue" >nul 2>&1
 
 :: ── Step 3: Launch Native App ────────────────────────────────────────────────
 echo.
