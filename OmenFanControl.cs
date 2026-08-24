@@ -140,7 +140,7 @@ namespace Cryo
                     // Level scale: 20 (2000 RPM) to 55 (5500 RPM)
                     int level = (int)Math.Round(20.0 + (percentage / 100.0) * 35.0);
                     int targetRpm = level * 100;
-                    args = $"-Bios FanMax=False FanLevel={level} -Ec FanLevel={level}";
+                    args = $"-Ec FanMode=Manual FanLevel={level} -Bios FanLevel={level} FanMax=False";
                     modeName = $"⚙️ Manual Speed: {percentage}% (≈ {targetRpm:N0} RPM)";
                 }
 
@@ -195,7 +195,7 @@ namespace Cryo
                         else
                         {
                             int level = (int)Math.Round(20.0 + (_lastRequestedPercentage / 100.0) * 35.0);
-                            heartbeatArgs = $"-Bios FanMax=False FanLevel={level} -Ec FanLevel={level}";
+                            heartbeatArgs = $"-Ec FanMode=Manual FanLevel={level} -Bios FanLevel={level} FanMax=False";
                         }
 
                         var psi = new ProcessStartInfo
