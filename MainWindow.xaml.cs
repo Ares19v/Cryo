@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
@@ -38,33 +39,49 @@ namespace Cryo
                 // Listen for messages FROM the React frontend
                 webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
 
-                string distFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui", "dist");
-                if (!Directory.Exists(distFolder))
+                // Priority 1: Check if Vite dev server is running on localhost:5173
+                bool devServerRunning = false;
+                try
                 {
-                    // Fallback to project root ui/dist if run from IDE
-                    string altDist = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "ui", "dist"));
-                    if (Directory.Exists(altDist))
+                    using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(400) };
+                    var resp = await client.GetAsync("http://localhost:5173");
+                    if (resp.IsSuccessStatusCode) devServerRunning = true;
+                }
+                catch { }
+
+                if (devServerRunning)
+                {
+                    webView.Source = new Uri("http://localhost:5173");
+                }
+                else
+                {
+                    // Priority 2: Use production build in ui/dist
+                    string distFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui", "dist");
+                    if (!Directory.Exists(distFolder))
                     {
-                        distFolder = altDist;
+                        string altDist = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "ui", "dist"));
+                        if (Directory.Exists(altDist))
+                        {
+                            distFolder = altDist;
+                        }
+                    }
+
+                    if (Directory.Exists(distFolder))
+                    {
+                        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                            "cryo.app", distFolder, CoreWebView2HostResourceAccessKind.Allow);
+                        webView.Source = new Uri("https://cryo.app/index.html");
                     }
                     else
                     {
-                        MessageBox.Show($"UI folder not found:\n{distFolder}", "Cryo Error");
-                        return;
+                        MessageBox.Show($"UI folder not found at:\n{distFolder}", "Cryo Diagnostics");
                     }
                 }
-
-                // Serve local files via virtual host (bypasses file:// UAC restrictions)
-                webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    "cryo.app", distFolder, CoreWebView2HostResourceAccessKind.Allow);
-
-                webView.Source = new Uri("https://cryo.app/index.html");
 
                 // Send initial telemetry once page is ready
                 webView.CoreWebView2.NavigationCompleted += (_, _) =>
                 {
                     SendTelemetry();
-                    // Send HP WMI diagnostic so the UI can show what's available
                     string diag = OmenFanControl.GetDiagnostics();
                     SendJson(new { type = "HP_DIAGNOSTICS", message = diag });
                 };
@@ -164,21 +181,24 @@ namespace Cryo
             });
         }
 
-        private void SendJson(object payload)
+        private void SendJson(object obj)
         {
             try
             {
-                string json = JsonSerializer.Serialize(payload);
-                webView.CoreWebView2?.PostWebMessageAsString(json);
+                if (webView?.CoreWebView2 != null)
+                {
+                    string json = JsonSerializer.Serialize(obj);
+                    webView.CoreWebView2.PostWebMessageAsString(json);
+                }
             }
             catch { }
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            base.OnClosed(e);
             _httpBridge?.Stop();
             _hardwareManager?.Close();
+            base.OnClosed(e);
         }
     }
 }

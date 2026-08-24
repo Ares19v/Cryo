@@ -52,9 +52,8 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-:: Sync UI dist and OmenMon into output folder
-if not exist "bin\Debug\net8.0-windows\ui" mkdir "bin\Debug\net8.0-windows\ui"
-xcopy /E /I /Y "ui\dist" "bin\Debug\net8.0-windows\ui\dist" >nul 2>&1
+:: Clean & Sync UI dist and OmenMon into output folder
+powershell -NoProfile -Command "Remove-Item -Recurse -Force 'bin\Debug\net8.0-windows\ui\dist' -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force -Path 'bin\Debug\net8.0-windows\ui\dist' | Out-Null; Copy-Item -Path 'ui\dist\*' -Destination 'bin\Debug\net8.0-windows\ui\dist' -Recurse -Force" >nul 2>&1
 
 if not exist "bin\Debug\net8.0-windows\OmenMon" mkdir "bin\Debug\net8.0-windows\OmenMon"
 xcopy /E /I /Y "bin\OmenMon" "bin\Debug\net8.0-windows\OmenMon" >nul 2>&1
