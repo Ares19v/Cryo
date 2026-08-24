@@ -25,15 +25,21 @@ namespace Cryo
             // Push telemetry to the WebView2 UI whenever hardware updates
             _hardwareManager.PropertyChanged += (_, e) => SendTelemetry();
 
-            InitializeAsync();
+            Loaded += (_, _) => InitializeAsync();
         }
 
         async void InitializeAsync()
         {
             try
             {
-                string cacheFolder = Path.Combine(Path.GetTempPath(), "CryoWebView2Cache");
-                var env = await CoreWebView2Environment.CreateAsync(null, cacheFolder);
+                string cacheFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Cryo", "WebView2Data");
+                if (!Directory.Exists(cacheFolder))
+                {
+                    Directory.CreateDirectory(cacheFolder);
+                }
+
+                var options = new CoreWebView2EnvironmentOptions("--disable-features=RendererCodeIntegrity --allow-insecure-localhost --disable-gpu-sandbox");
+                var env = await CoreWebView2Environment.CreateAsync(null, cacheFolder, options);
                 await webView.EnsureCoreWebView2Async(env);
 
                 // Listen for messages FROM the React frontend
@@ -55,21 +61,29 @@ namespace Cryo
                 }
                 else
                 {
-                    // Priority 2: Use internal HTTP server on port 5050 (100% immune to UAC/virtual host blocks)
+                    // Priority 2: Use internal HTTP server on port 5050
                     webView.Source = new Uri("http://localhost:5050/");
                 }
 
-                // Send initial telemetry once page is ready
-                webView.CoreWebView2.NavigationCompleted += (_, _) =>
+                webView.CoreWebView2.NavigationCompleted += (_, args) =>
                 {
+                    if (!args.IsSuccess)
+                    {
+                        MessageBox.Show($"UI Navigation error: {args.WebErrorStatus}", "Cryo Diagnostics");
+                    }
                     SendTelemetry();
                     string diag = OmenFanControl.GetDiagnostics();
                     SendJson(new { type = "HP_DIAGNOSTICS", message = diag });
                 };
+
+                webView.CoreWebView2.ProcessFailed += (_, args) =>
+                {
+                    MessageBox.Show($"Renderer process failed: {args.ProcessFailedKind} ({args.Reason})", "Cryo Error");
+                };
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to initialize UI:\n{ex.Message}", "Cryo Error");
+                MessageBox.Show($"Failed to initialize WebView2:\n{ex.Message}\n\nFallback: Open http://localhost:5050 in Chrome/Edge.", "Cryo Startup Diagnostics");
             }
         }
 
