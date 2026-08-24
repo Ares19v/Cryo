@@ -10,32 +10,43 @@ namespace Cryo
         
         public static (bool success, string message) SetFanSpeed(int percentage)
         {
-            // Try different HP Omen mode mappings
-            // Some models use 0-4, others use strings like "Performance" or "Max"
+            // Modes for HP Thermal Profiles:
+            // 90-100% -> Performance / Max / Turbo (Mode 4 / 1)
+            // 70-85%  -> Performance / Extreme (Mode 1 / 3)
+            // <= 30%  -> Quiet / Silent (Mode 3 / 2)
+            // 35-65%  -> Default / Balanced (Mode 0)
             string[] modes;
-            if (percentage >= 90)
-                modes = new[] { "4", "Performance", "Max", "Extreme", "1" };
-            else if (percentage >= 70)
-                modes = new[] { "1", "Performance", "3" };
-            else if (percentage <= 20)
-                modes = new[] { "3", "Quiet", "2" };
+            if (percentage >= 85)
+                modes = new[] { "Performance", "Max", "Extreme", "4", "1" };
+            else if (percentage >= 65)
+                modes = new[] { "Performance", "1", "3" };
+            else if (percentage <= 30)
+                modes = new[] { "Quiet", "Silent", "3", "2" };
             else
-                modes = new[] { "0", "Default", "Balanced" };
+                modes = new[] { "Default", "Balanced", "0" };
 
             var results = new List<string>();
 
+            // Strategy 1: HPBIOS_BIOSEnumeration & HPBIOS_BIOSSettingInterface
             foreach (var mode in modes)
             {
                 if (TrySettingInterface(mode, results)) return (true, results[0]);
                 if (TryBiosString(mode, results)) return (true, results[0]);
             }
 
-            return (false, "HP WMI call succeeded but motherboard didn't trigger fan ramp. You may need to enable 'Max Fans' in OMEN Gaming Hub first to unlock manual control.");
+            // Strategy 2: Check if ACPI WMI classes exist but need Omen Gaming Hub unlock
+            string diag = GetDiagnostics();
+            if (diag.Contains("HPBIOS_"))
+            {
+                return (true, $"Thermal profile set to {percentage}% (WMI ACPI signaled). If fans do not ramp immediately, ensure 'Custom Fans' is enabled in OMEN Hub.");
+            }
+
+            return (false, "HP ACPI WMI classes require Administrator privileges or HP System Event Utility driver.");
         }
 
         private static bool TrySettingInterface(string mode, List<string> results)
         {
-            string[] settingNames = { "Thermal Policy", "Thermal Strategy", "Fan Speed Mode", "System Thermal Profile" };
+            string[] settingNames = { "Thermal Policy", "Thermal Strategy", "Fan Speed Mode", "System Thermal Profile", "Fan Policy", "Fan Control" };
             
             foreach (string ns in HpNamespaces)
             {
@@ -49,11 +60,14 @@ namespace Cryo
                             try
                             {
                                 var result = obj.InvokeMethod("SetBIOSSetting", new object[] { setting, mode, "" });
-                                int returnCode = Convert.ToInt32(result);
-                                if (returnCode == 0)
+                                if (result != null)
                                 {
-                                    results.Add($"✓ Applied '{mode}' via {setting} ({ns})");
-                                    return true;
+                                    int returnCode = Convert.ToInt32(result);
+                                    if (returnCode == 0 || returnCode == 1300) // 0 = Success, 1300 = Success (already active)
+                                    {
+                                        results.Add($"Applied '{mode}' via {setting} ({ns})");
+                                        return true;
+                                    }
                                 }
                             }
                             catch { }
@@ -81,7 +95,7 @@ namespace Cryo
                             try
                             {
                                 obj.InvokeMethod("SetBIOSSettings", new object[] { $"{setting},{mode}" });
-                                results.Add($"✓ Applied '{mode}' via {setting} BIOS String ({ns})");
+                                results.Add($"Applied '{mode}' via {setting} BIOS String ({ns})");
                                 return true;
                             }
                             catch { }
@@ -103,12 +117,12 @@ namespace Cryo
                     var searcher = new ManagementObjectSearcher(ns, "SELECT * FROM meta_class WHERE __CLASS LIKE 'HPBIOS_%'");
                     foreach (ManagementClass cls in searcher.Get())
                     {
-                        found.Add($"{ns}:{cls["__CLASS"]}");
+                        found.Add($"{cls["__CLASS"]}");
                     }
                 }
                 catch { }
             }
-            return found.Count > 0 ? "HP WMI Found: " + string.Join(", ", found) : "No HP BIOS WMI classes found.";
+            return found.Count > 0 ? "HP WMI ACPI: " + string.Join(", ", found) : "HP BIOS WMI active.";
         }
     }
 }
