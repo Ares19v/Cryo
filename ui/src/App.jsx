@@ -9,6 +9,44 @@ import {
 
 const API_BASE = 'http://localhost:5050';
 
+// ─── Global Error Boundary ────────────────────────────────────────────────────
+// Catches any JS crash and shows a visible error instead of a blank white screen
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ background: '#0A0E1A', color: '#F87171', fontFamily: 'monospace', padding: '40px', height: '100vh', overflow: 'auto' }}>
+          <h1 style={{ color: '#00C6FF', fontSize: '24px', marginBottom: '16px' }}>❄ Cryo — Runtime Error</h1>
+          <p style={{ color: '#94A3B8', marginBottom: '16px' }}>A JavaScript error prevented the UI from rendering. Details:</p>
+          <pre style={{ background: '#111827', padding: '20px', borderRadius: '12px', color: '#F87171', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            {String(this.state.error?.message || this.state.error)}
+            {'\n\n'}
+            {String(this.state.error?.stack || '')}
+          </pre>
+          <p style={{ color: '#94A3B8', marginTop: '20px' }}>
+            Hardware data is still available at{' '}
+            <a href="http://localhost:5050/api/telemetry" style={{ color: '#00C6FF' }}>http://localhost:5050/api/telemetry</a>
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{ marginTop: '20px', background: '#0072FF', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+          >
+            ↺ Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Procedural Audio Synthesizer (Web Audio API) ───────────────────────────
 
 const playCyberSound = (type = 'click') => {
@@ -201,36 +239,43 @@ const SensorRow = ({ name, value, index, isDark }) => (
   </motion.div>
 );
 
-const StatCard = ({ title, value, unit = '', icon: Icon, delay, color, history = [], isDark }) => (
-  <Card delay={delay} isDark={isDark} className="p-6 relative flex flex-col justify-between overflow-hidden group">
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className={`p-2.5 rounded-xl ${color.bg}`}>
-          <Icon className={`w-5 h-5 ${color.icon}`} />
-        </div>
-        <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">REAL-TIME</span>
-      </div>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</p>
-      <div className="flex items-baseline gap-1 mt-1">
-        <motion.span
-          key={value}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={`text-4xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}
-        >
-          {value.replace(' °C', '').replace(' %', '')}
-        </motion.span>
-        <span className="text-sm font-bold text-slate-400">{unit || (value.includes('°C') ? '°C' : '%')}</span>
-      </div>
-    </div>
+const StatCard = ({ title, value, unit = '', icon: Icon, delay, color, history = [], isDark }) => {
+  // value may arrive as a number (e.g. 67) or string (e.g. "67 °C") — always coerce to string
+  const strVal = String(value ?? '--');
+  const displayNum = strVal.replace(' °C', '').replace(' %', '').replace('°C', '').replace('%', '').trim();
+  const displayUnit = unit || (strVal.includes('°C') ? '°C' : strVal.includes('%') ? '%' : '');
 
-    {history.length > 2 && (
-      <div className={`mt-4 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-100/60'}`}>
-        <Sparkline data={history} color={color.sparkline || '#00C6FF'} />
+  return (
+    <Card delay={delay} isDark={isDark} className="p-6 relative flex flex-col justify-between overflow-hidden group">
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className={`p-2.5 rounded-xl ${color.bg}`}>
+            <Icon className={`w-5 h-5 ${color.icon}`} />
+          </div>
+          <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">REAL-TIME</span>
+        </div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</p>
+        <div className="flex items-baseline gap-1 mt-1">
+          <motion.span
+            key={displayNum}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`text-4xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}
+          >
+            {displayNum}
+          </motion.span>
+          <span className="text-sm font-bold text-slate-400">{displayUnit}</span>
+        </div>
       </div>
-    )}
-  </Card>
-);
+
+      {history.length > 2 && (
+        <div className={`mt-4 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-100/60'}`}>
+          <Sparkline data={history} color={color.sparkline || '#00C6FF'} />
+        </div>
+      )}
+    </Card>
+  );
+};
 
 const CoreHeatTile = ({ core, temp, index, isDark }) => {
   let colorClass = isDark ? 'bg-cyan-950/40 border-cyan-800/60 text-cyan-300' : 'bg-cyan-50 border-cyan-200 text-cyan-700';
