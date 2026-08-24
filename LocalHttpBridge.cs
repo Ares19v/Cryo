@@ -100,6 +100,9 @@ namespace Cryo
                         gpuVram = _hardwareManager.GpuVram,
                         gpuPower = _hardwareManager.GpuPower,
                         gpuClock = _hardwareManager.GpuClock,
+                        ramUsed = _hardwareManager.RamUsed,
+                        ramTotal = _hardwareManager.RamTotal,
+                        ramPercent = _hardwareManager.RamPercent,
                         powerSource = _hardwareManager.PowerSource,
                         batteryPercent = _hardwareManager.BatteryPercent,
                         perCoreTemps = _hardwareManager.PerCoreTemps,
@@ -138,6 +141,15 @@ namespace Cryo
                     bool ok = PowerManager.SetPlan(plan);
                     var result = new { success = ok, plan };
 
+                    byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(result));
+                    res.ContentType = "application/json";
+                    res.ContentLength64 = data.Length;
+                    res.OutputStream.Write(data, 0, data.Length);
+                }
+                else if (path == "/api/purge-ram" && req.HttpMethod == "POST")
+                {
+                    long freed = _hardwareManager.PurgeRam();
+                    var result = new { success = true, freedBytes = freed, message = "Purged inactive standby working sets." };
                     byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(result));
                     res.ContentType = "application/json";
                     res.ContentLength64 = data.Length;

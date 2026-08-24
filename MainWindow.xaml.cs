@@ -100,6 +100,11 @@ namespace Cryo
                         SendJson(new { type = "FAN_SPEED_RESULT", success = fanOk, message = msg, speed });
                         break;
 
+                    case "PURGE_RAM":
+                        long freed = _hardwareManager.PurgeRam();
+                        SendJson(new { type = "PURGE_RAM_RESULT", success = true, freedBytes = freed });
+                        break;
+
                     case "GET_TELEMETRY":
                         SendTelemetry();
                         break;
@@ -143,6 +148,9 @@ namespace Cryo
                             gpuVram = _hardwareManager.GpuVram,
                             gpuPower = _hardwareManager.GpuPower,
                             gpuClock = _hardwareManager.GpuClock,
+                            ramUsed = _hardwareManager.RamUsed,
+                            ramTotal = _hardwareManager.RamTotal,
+                            ramPercent = _hardwareManager.RamPercent,
                             powerSource = _hardwareManager.PowerSource,
                             batteryPercent = _hardwareManager.BatteryPercent,
                             perCoreTemps = _hardwareManager.PerCoreTemps,

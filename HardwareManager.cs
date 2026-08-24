@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -40,6 +41,9 @@ namespace Cryo
 
     public class HardwareManager : INotifyPropertyChanged
     {
+        [DllImport("psapi.dll")]
+        static extern int EmptyWorkingSet(IntPtr hwProc);
+
         private Computer _computer;
         private CancellationTokenSource _cts = new CancellationTokenSource();
 
@@ -63,6 +67,15 @@ namespace Cryo
 
         private string _gpuClock = "0 MHz";
         public string GpuClock { get => _gpuClock; set { if (_gpuClock != value) { _gpuClock = value; OnPropertyChanged(); } } }
+
+        private string _ramUsed = "0 GB";
+        public string RamUsed { get => _ramUsed; set { if (_ramUsed != value) { _ramUsed = value; OnPropertyChanged(); } } }
+
+        private string _ramTotal = "32 GB";
+        public string RamTotal { get => _ramTotal; set { if (_ramTotal != value) { _ramTotal = value; OnPropertyChanged(); } } }
+
+        private string _ramPercent = "0 %";
+        public string RamPercent { get => _ramPercent; set { if (_ramPercent != value) { _ramPercent = value; OnPropertyChanged(); } } }
 
         private string _powerSource = "AC Power (Plugged In)";
         public string PowerSource { get => _powerSource; set { if (_powerSource != value) { _powerSource = value; OnPropertyChanged(); } } }
@@ -138,7 +151,28 @@ namespace Cryo
                 }
                 catch { }
 
-                // 2. Query LibreHardwareMonitor
+                // 2. Query System RAM via Win32_OperatingSystem
+                try
+                {
+                    using var searcher = new ManagementObjectSearcher("SELECT FreePhysicalMemory, TotalVisibleMemorySize FROM Win32_OperatingSystem");
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        double freeKb = Convert.ToDouble(obj["FreePhysicalMemory"]);
+                        double totalKb = Convert.ToDouble(obj["TotalVisibleMemorySize"]);
+                        double usedKb = totalKb - freeKb;
+                        double totalGb = totalKb / (1024 * 1024);
+                        double usedGb = usedKb / (1024 * 1024);
+                        double percent = (usedKb / totalKb) * 100.0;
+
+                        RamTotal = $"{totalGb:F1} GB";
+                        RamUsed = $"{usedGb:F1} GB";
+                        RamPercent = $"{percent:F0} %";
+                        break;
+                    }
+                }
+                catch { }
+
+                // 3. Query LibreHardwareMonitor
                 foreach (var hardware in _computer.Hardware)
                 {
                     hardware.Update();
@@ -199,7 +233,7 @@ namespace Cryo
                     PerCoreTemps = coreTemps;
                 }
 
-                // 3. GPU Query via nvidia-smi (High Precision for RTX 5060)
+                // 4. GPU Query via nvidia-smi (High Precision for RTX 5060)
                 try
                 {
                     var gpuData = QueryNvidiaSmi();
@@ -218,7 +252,7 @@ namespace Cryo
                 }
                 catch { }
 
-                // 4. Fallback for CPU Load: WMI Performance Formatted Data
+                // 5. Fallback for CPU Load: WMI Performance Formatted Data
                 if (!hasCpuLoad)
                 {
                     try
@@ -238,7 +272,7 @@ namespace Cryo
                     catch { }
                 }
 
-                // 5. Fallback for CPU Temp: ACPI Thermal Zone
+                // 6. Fallback for CPU Temp: ACPI Thermal Zone
                 if (!hasCpuTemp)
                 {
                     try
@@ -260,6 +294,25 @@ namespace Cryo
                 }
             }
             catch { }
+        }
+
+        public long PurgeRam()
+        {
+            try
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                long before = GC.GetTotalMemory(false);
+                EmptyWorkingSet(Process.GetCurrentProcess().Handle);
+                long after = GC.GetTotalMemory(true);
+                return Math.Max(0, before - after);
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private (int temp, int load, int vramUsed, int vramTotal, double power, int clock) QueryNvidiaSmi()
