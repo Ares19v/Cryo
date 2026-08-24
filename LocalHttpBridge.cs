@@ -62,7 +62,7 @@ namespace Cryo
             var req = ctx.Request;
             var res = ctx.Response;
 
-            // Enable CORS for browser dev server
+            // Enable CORS
             res.AddHeader("Access-Control-Allow-Origin", "*");
             res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             res.AddHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -76,9 +76,10 @@ namespace Cryo
 
             try
             {
-                string path = req.Url?.AbsolutePath.ToLowerInvariant() ?? "";
+                string path = req.Url?.AbsolutePath ?? "/";
+                string lowerPath = path.ToLowerInvariant();
 
-                if (path == "/api/telemetry" && req.HttpMethod == "GET")
+                if (lowerPath == "/api/telemetry" && req.HttpMethod == "GET")
                 {
                     var temps = new System.Collections.Generic.List<object>();
                     var fans = new System.Collections.Generic.List<object>();
@@ -116,7 +117,7 @@ namespace Cryo
                     res.ContentLength64 = data.Length;
                     res.OutputStream.Write(data, 0, data.Length);
                 }
-                else if (path == "/api/set-fan-speed" && req.HttpMethod == "POST")
+                else if (lowerPath == "/api/set-fan-speed" && req.HttpMethod == "POST")
                 {
                     using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
                     string body = reader.ReadToEnd();
@@ -131,7 +132,7 @@ namespace Cryo
                     res.ContentLength64 = data.Length;
                     res.OutputStream.Write(data, 0, data.Length);
                 }
-                else if (path == "/api/set-power-plan" && req.HttpMethod == "POST")
+                else if (lowerPath == "/api/set-power-plan" && req.HttpMethod == "POST")
                 {
                     using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
                     string body = reader.ReadToEnd();
@@ -146,7 +147,7 @@ namespace Cryo
                     res.ContentLength64 = data.Length;
                     res.OutputStream.Write(data, 0, data.Length);
                 }
-                else if (path == "/api/purge-ram" && req.HttpMethod == "POST")
+                else if (lowerPath == "/api/purge-ram" && req.HttpMethod == "POST")
                 {
                     long freed = _hardwareManager.PurgeRam();
                     var result = new { success = true, freedBytes = freed, message = "Purged inactive standby working sets." };
@@ -157,7 +158,8 @@ namespace Cryo
                 }
                 else
                 {
-                    res.StatusCode = 404;
+                    // Serve static files from ui/dist
+                    ServeStaticFile(path, res);
                 }
             }
             catch (Exception ex)
@@ -169,6 +171,57 @@ namespace Cryo
             finally
             {
                 try { res.Close(); } catch { }
+            }
+        }
+
+        private void ServeStaticFile(string relativePath, HttpListenerResponse res)
+        {
+            if (relativePath == "/" || string.IsNullOrEmpty(relativePath))
+                relativePath = "/index.html";
+
+            string distFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui", "dist");
+            if (!Directory.Exists(distFolder))
+            {
+                string altDist = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "ui", "dist"));
+                if (Directory.Exists(altDist)) distFolder = altDist;
+            }
+
+            string filePath = Path.Combine(distFolder, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+
+            if (File.Exists(filePath))
+            {
+                string ext = Path.GetExtension(filePath).ToLowerInvariant();
+                res.ContentType = ext switch
+                {
+                    ".html" => "text/html; charset=utf-8",
+                    ".js" => "application/javascript; charset=utf-8",
+                    ".css" => "text/css; charset=utf-8",
+                    ".svg" => "image/svg+xml",
+                    ".png" => "image/png",
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".json" => "application/json",
+                    _ => "application/octet-stream"
+                };
+
+                byte[] content = File.ReadAllBytes(filePath);
+                res.ContentLength64 = content.Length;
+                res.OutputStream.Write(content, 0, content.Length);
+            }
+            else
+            {
+                // Fallback for SPA routing to index.html
+                string indexPath = Path.Combine(distFolder, "index.html");
+                if (File.Exists(indexPath))
+                {
+                    res.ContentType = "text/html; charset=utf-8";
+                    byte[] content = File.ReadAllBytes(indexPath);
+                    res.ContentLength64 = content.Length;
+                    res.OutputStream.Write(content, 0, content.Length);
+                }
+                else
+                {
+                    res.StatusCode = 404;
+                }
             }
         }
     }

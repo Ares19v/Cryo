@@ -18,7 +18,7 @@ namespace Cryo
             _hardwareManager = new HardwareManager();
             _hardwareManager.StartMonitoring();
 
-            // Start HTTP bridge for external browsers / tools
+            // Start HTTP bridge for external browsers / tools & internal WebView2
             _httpBridge = new LocalHttpBridge(_hardwareManager, 5050);
             _httpBridge.Start();
             
@@ -39,7 +39,7 @@ namespace Cryo
                 // Listen for messages FROM the React frontend
                 webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
 
-                // Priority 1: Check if Vite dev server is running on localhost:5173
+                // Priority 1: Check if Vite dev server is active on localhost:5173
                 bool devServerRunning = false;
                 try
                 {
@@ -55,27 +55,8 @@ namespace Cryo
                 }
                 else
                 {
-                    // Priority 2: Use production build in ui/dist
-                    string distFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui", "dist");
-                    if (!Directory.Exists(distFolder))
-                    {
-                        string altDist = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "ui", "dist"));
-                        if (Directory.Exists(altDist))
-                        {
-                            distFolder = altDist;
-                        }
-                    }
-
-                    if (Directory.Exists(distFolder))
-                    {
-                        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                            "cryo.app", distFolder, CoreWebView2HostResourceAccessKind.Allow);
-                        webView.Source = new Uri("https://cryo.app/index.html");
-                    }
-                    else
-                    {
-                        MessageBox.Show($"UI folder not found at:\n{distFolder}", "Cryo Diagnostics");
-                    }
+                    // Priority 2: Use internal HTTP server on port 5050 (100% immune to UAC/virtual host blocks)
+                    webView.Source = new Uri("http://localhost:5050/");
                 }
 
                 // Send initial telemetry once page is ready
