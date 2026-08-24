@@ -69,10 +69,6 @@ echo.
 echo [3/3] Launching Cryo Desktop Application...
 start "" "%~dp0bin\Debug\net8.0-windows\Cryo.exe"
 
-echo.
-echo  ================================================
-echo   ❄️  Cryo is running with Live Kernel Telemetry!
-echo   Web Bridge: http://localhost:5050/api/telemetry
-echo  ================================================
-echo.
-pause
+:: Auto-close launcher console so only the Cryo window remains
+timeout /t 1 >nul 2>&1
+exit /b 0

@@ -191,6 +191,7 @@ namespace Cryo
 
         protected override void OnClosed(EventArgs e)
         {
+            OmenFanControl.Shutdown();
             _httpBridge?.Stop();
             _hardwareManager?.Close();
             base.OnClosed(e);

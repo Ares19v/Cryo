@@ -91,12 +91,38 @@ namespace Cryo
             return "";
         }
 
+        private static Process? _omenMonDaemon;
+
+        public static void Shutdown()
+        {
+            StopHeartbeat();
+            KillOmenMonDaemon();
+        }
+
+        private static void KillOmenMonDaemon()
+        {
+            try
+            {
+                if (_omenMonDaemon != null && !_omenMonDaemon.HasExited)
+                {
+                    _omenMonDaemon.Kill();
+                    _omenMonDaemon.Dispose();
+                }
+            }
+            catch { }
+            finally
+            {
+                _omenMonDaemon = null;
+            }
+        }
+
         private static bool ExecuteOmenMon(string exePath, int percentage, List<string> results)
         {
             try
             {
                 string args;
                 string modeName;
+                bool isContinuousProg = false;
 
                 if (percentage == 0)
                 {
@@ -113,32 +139,50 @@ namespace Cryo
                 {
                     args = "-Bios FanMax=False -Prog Silent";
                     modeName = "🌙 Silent Profile (Dynamic Curve)";
+                    isContinuousProg = true;
                 }
                 else if (percentage >= 65)
                 {
                     args = "-Bios FanMax=False -Prog Performance";
                     modeName = "🔥 Performance Profile (Dynamic Curve)";
+                    isContinuousProg = true;
                 }
                 else
                 {
                     args = "-Bios FanMax=False -Prog Default";
                     modeName = "⚖️ Balanced Profile";
+                    isContinuousProg = true;
                 }
+
+                // Kill previous background monitor daemon if any
+                KillOmenMonDaemon();
 
                 var psi = new ProcessStartInfo
                 {
                     FileName = exePath,
                     Arguments = args,
                     CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
                     UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
                     WorkingDirectory = Path.GetDirectoryName(exePath) ?? ""
                 };
 
-                using var proc = Process.Start(psi);
-                proc?.WaitForExit(3000);
-
-                results.Add($"✓ Hardware fan mode '{modeName}' active.");
-                return true;
+                if (isContinuousProg)
+                {
+                    _omenMonDaemon = Process.Start(psi);
+                    results.Add($"✓ Hardware fan mode '{modeName}' active.");
+                    return true;
+                }
+                else
+                {
+                    using var proc = Process.Start(psi);
+                    proc?.WaitForExit(3000);
+                    results.Add($"✓ Hardware fan mode '{modeName}' active.");
+                    return true;
+                }
             }
             catch (Exception ex)
             {
@@ -161,7 +205,11 @@ namespace Cryo
                             FileName = exePath,
                             Arguments = "-Bios FanMax=True",
                             CreateNoWindow = true,
+                            WindowStyle = ProcessWindowStyle.Hidden,
                             UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            RedirectStandardInput = true,
                             WorkingDirectory = Path.GetDirectoryName(exePath) ?? ""
                         };
                         using var proc = Process.Start(psi);
