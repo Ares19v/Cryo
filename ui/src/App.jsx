@@ -113,52 +113,65 @@ const Sparkline = ({ data, color = '#00C6FF', height = 45 }) => {
   );
 };
 
-// ─── Interactive Fan Curve Visualizer ─────────────────────────────────────────
+// ─── Interactive Fan Curve Visualizer (OMEN Gaming Hub Factory Auto Curve) ──
 const FanCurveEditor = ({ currentTemp = 60 }) => {
+  // Exact 9-Point Factory Thermal Profile from HP OMEN Gaming Hub BIOS Table
   const points = [
-    { temp: 35, rpm: 20 },
-    { temp: 50, rpm: 35 },
-    { temp: 65, rpm: 55 },
-    { temp: 75, rpm: 80 },
-    { temp: 85, rpm: 100 }
+    { temp: 40, rpm: 2100, label: '2.1k' },
+    { temp: 50, rpm: 2500, label: '2.5k' },
+    { temp: 55, rpm: 2500, label: '2.5k' },
+    { temp: 60, rpm: 3000, label: '3.0k' },
+    { temp: 65, rpm: 3500, label: '3.5k' },
+    { temp: 70, rpm: 4000, label: '4.0k' },
+    { temp: 75, rpm: 4500, label: '4.5k' },
+    { temp: 80, rpm: 5000, label: '5.0k' },
+    { temp: 85, rpm: 5700, label: '5.7k' }
   ];
   const svgW = 480;
   const svgH = 140;
-  const getX = (t) => ((t - 30) / (90 - 30)) * (svgW - 40) + 20;
-  const getY = (r) => svgH - (r / 100) * (svgH - 30) - 15;
+  const minT = 35, maxT = 90;
+  const minRpm = 1800, maxRpm = 6000;
+  const getX = (t) => ((t - minT) / (maxT - minT)) * (svgW - 40) + 20;
+  const getY = (r) => svgH - ((r - minRpm) / (maxRpm - minRpm)) * (svgH - 35) - 15;
   const pathStr = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${getX(p.temp)} ${getY(p.rpm)}`, '');
   const curX = Math.max(20, Math.min(svgW - 20, getX(currentTemp)));
+
+  // Current interpolated expected RPM
+  const activePt = points.slice().reverse().find(p => currentTemp >= p.temp) || points[0];
 
   return (
     <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-white relative overflow-hidden">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-[#00C6FF]" />
-          <span className="text-xs font-bold text-slate-200">EC Acoustic Dynamic Thermal Curve</span>
+          <span className="text-xs font-bold text-slate-200">OMEN Gaming Hub Factory Auto Thermal Curve</span>
         </div>
-        <span className="text-[11px] font-mono text-[#00C6FF]">Live Tracking: {currentTemp}°C</span>
+        <div className="flex items-center gap-2 text-[11px] font-mono">
+          <span className="text-slate-400">Live: <strong className="text-white">{currentTemp}°C</strong></span>
+          <span className="text-[#00C6FF] bg-[#00C6FF]/10 px-2 py-0.5 rounded border border-[#00C6FF]/20">Target: ≈ {activePt.rpm} RPM</span>
+        </div>
       </div>
       <div className="relative">
         <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-32 overflow-visible">
           <line x1="20" y1="20" x2={svgW - 20} y2="20" stroke="#1E293B" strokeDasharray="3 3" />
           <line x1="20" y1={svgH / 2} x2={svgW - 20} y2={svgH / 2} stroke="#1E293B" strokeDasharray="3 3" />
-          <line x1="20" y1={svgH - 20} x2={svgW - 20} y2={svgH - 20} stroke="#334155" />
+          <line x1="20" y1={svgH - 18} x2={svgW - 20} y2={svgH - 18} stroke="#334155" />
           <path d={pathStr} fill="none" stroke="#00C6FF" strokeWidth="3" strokeLinecap="round" />
           {points.map((p, i) => (
             <g key={i}>
-              <circle cx={getX(p.temp)} cy={getY(p.rpm)} r="5" fill="#0072FF" stroke="#FFFFFF" strokeWidth="2" />
-              <text x={getX(p.temp)} y={getY(p.rpm) - 10} fill="#94A3B8" fontSize="9" textAnchor="middle" fontWeight="bold">{p.rpm}%</text>
+              <circle cx={getX(p.temp)} cy={getY(p.rpm)} r="4" fill="#0072FF" stroke="#FFFFFF" strokeWidth="1.5" />
+              <text x={getX(p.temp)} y={getY(p.rpm) - 8} fill="#94A3B8" fontSize="8.5" textAnchor="middle" fontWeight="bold">{p.label}</text>
             </g>
           ))}
-          <line x1={curX} y1="10" x2={curX} y2={svgH - 10} stroke="#F43F5E" strokeWidth="2" strokeDasharray="2 2" />
-          <circle cx={curX} cy={getY(Math.min(100, Math.max(20, (currentTemp - 30) * 1.5)))} r="6" fill="#F43F5E" />
+          <line x1={curX} y1="8" x2={curX} y2={svgH - 12} stroke="#F43F5E" strokeWidth="2" strokeDasharray="2 2" />
+          <circle cx={curX} cy={getY(activePt.rpm)} r="5.5" fill="#F43F5E" />
         </svg>
       </div>
       <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1 px-4">
-        <span>30°C (Idle)</span>
-        <span>50°C</span>
-        <span>70°C (Load)</span>
-        <span>90°C (Peak)</span>
+        <span>40°C (Silent)</span>
+        <span>55°C (Balanced)</span>
+        <span>70°C (Gaming)</span>
+        <span>85°C (Turbo Peak)</span>
       </div>
     </div>
   );

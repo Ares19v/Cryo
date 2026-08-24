@@ -126,9 +126,10 @@ namespace Cryo
 
                 if (percentage == 0)
                 {
-                    // Auto Mode: Revert back to HP BIOS automatic management
-                    args = "-Bios FanMax=False";
-                    modeName = "🤖 Auto (Factory Curve)";
+                    // Auto Mode: Exact OMEN Gaming Hub factory dynamic thermal curve
+                    args = "-Bios FanMax=False -Prog Default";
+                    modeName = "🤖 OMEN Auto (Factory BIOS Curve)";
+                    isContinuousProg = true;
                 }
                 else if (percentage >= 85)
                 {
