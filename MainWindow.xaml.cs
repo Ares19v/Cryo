@@ -139,6 +139,13 @@ namespace Cryo
                             cpuTemp = _hardwareManager.CpuTemperature,
                             gpuTemp = _hardwareManager.GpuTemperature,
                             cpuLoad = _hardwareManager.CpuLoad,
+                            gpuLoad = _hardwareManager.GpuLoad,
+                            gpuVram = _hardwareManager.GpuVram,
+                            gpuPower = _hardwareManager.GpuPower,
+                            gpuClock = _hardwareManager.GpuClock,
+                            powerSource = _hardwareManager.PowerSource,
+                            batteryPercent = _hardwareManager.BatteryPercent,
+                            perCoreTemps = _hardwareManager.PerCoreTemps,
                             temps,
                             fans,
                             loads
