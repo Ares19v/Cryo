@@ -470,7 +470,13 @@ function DashboardPage({ telemetry, isConnected, cpuHistory, gpuHistory, isDark,
           {telemetry.perCoreTemps && telemetry.perCoreTemps.length > 0 ? (
             <div className="grid grid-cols-8 gap-2.5">
               {telemetry.perCoreTemps.slice(0, 16).map((c, i) => (
-                <CoreHeatTile key={i} core={c.name.replace('Intel Core i7-14650HX - ', '')} temp={c.temp} index={i} isDark={isDark} />
+                <CoreHeatTile
+                  key={i}
+                  core={String(c.Name ?? c.name ?? `C${i}`).replace('Intel Core i7-14650HX - ', '').replace('CPU Core ', 'Core ').trim()}
+                  temp={c.Temp ?? c.temp ?? 0}
+                  index={i}
+                  isDark={isDark}
+                />
               ))}
             </div>
           ) : (
