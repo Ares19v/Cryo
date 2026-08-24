@@ -19,6 +19,12 @@ namespace Cryo
             _lastRequestedPercentage = percentage;
             var results = new List<string>();
 
+            // If percentage == 0, it represents Factory AUTO mode
+            if (percentage == 0)
+            {
+                StopHeartbeat();
+            }
+
             // Strategy 1: Use embedded OmenMon engine if available
             string omenMonPath = FindOmenMonBinary();
             if (!string.IsNullOrEmpty(omenMonPath))
@@ -26,13 +32,26 @@ namespace Cryo
                 bool omenMonOk = ExecuteOmenMon(omenMonPath, percentage, results);
                 if (omenMonOk)
                 {
-                    StartHeartbeat(omenMonPath);
+                    if (percentage >= 85)
+                    {
+                        StartHeartbeat(omenMonPath);
+                    }
+                    else
+                    {
+                        StopHeartbeat();
+                    }
                     return (true, results.Count > 0 ? results[0] : $"✓ Applied {percentage}% Fan Target via Omen Engine");
                 }
             }
 
             // Strategy 2: Direct hpqBIntM ACPI WMI call
-            int modeCode = percentage >= 85 ? 2 : (percentage >= 65 ? 1 : (percentage <= 30 ? 3 : 0));
+            int modeCode;
+            if (percentage == 0) modeCode = 0; // Auto/Default
+            else if (percentage >= 85) modeCode = 2; // Max Cool
+            else if (percentage >= 65) modeCode = 1; // Performance
+            else if (percentage <= 30) modeCode = 3; // Quiet
+            else modeCode = 0; // Balanced
+
             if (TryHpqBIntM(modeCode, results))
             {
                 return (true, results[0]);
@@ -77,17 +96,33 @@ namespace Cryo
             try
             {
                 string args;
-                if (percentage >= 85)
+                string modeName;
+
+                if (percentage == 0)
+                {
+                    // Auto Mode: Revert back to HP BIOS automatic management
+                    args = "-Bios FanMax=False";
+                    modeName = "🤖 Auto (Factory Curve)";
+                }
+                else if (percentage >= 85)
                 {
                     args = "-Bios FanMax=True";
+                    modeName = "❄️ Max Cool (100% Turbo)";
                 }
                 else if (percentage <= 30)
                 {
                     args = "-Bios FanMax=False -Prog Silent";
+                    modeName = "🌙 Silent Profile (Dynamic Curve)";
+                }
+                else if (percentage >= 65)
+                {
+                    args = "-Bios FanMax=False -Prog Performance";
+                    modeName = "🔥 Performance Profile (Dynamic Curve)";
                 }
                 else
                 {
                     args = "-Bios FanMax=False -Prog Default";
+                    modeName = "⚖️ Balanced Profile";
                 }
 
                 var psi = new ProcessStartInfo
@@ -102,8 +137,7 @@ namespace Cryo
                 using var proc = Process.Start(psi);
                 proc?.WaitForExit(3000);
 
-                string modeName = percentage >= 85 ? "Max Cool (100%)" : (percentage <= 30 ? "Quiet (20%)" : "Balanced (50%)");
-                results.Add($"✓ Hardware fan profile '{modeName}' applied via Omen ACPI Engine.");
+                results.Add($"✓ Hardware fan mode '{modeName}' active.");
                 return true;
             }
             catch (Exception ex)
@@ -115,8 +149,7 @@ namespace Cryo
 
         private static void StartHeartbeat(string exePath)
         {
-            // Heartbeat every 90 seconds to prevent HP 120-second EC reset timeout
-            _heartbeatTimer?.Dispose();
+            StopHeartbeat();
             _heartbeatTimer = new Timer(_ =>
             {
                 if (_lastRequestedPercentage >= 85)
@@ -137,6 +170,12 @@ namespace Cryo
                     catch { }
                 }
             }, null, TimeSpan.FromSeconds(90), TimeSpan.FromSeconds(90));
+        }
+
+        private static void StopHeartbeat()
+        {
+            _heartbeatTimer?.Dispose();
+            _heartbeatTimer = null;
         }
 
         private static bool TryHpqBIntM(int modeCode, List<string> results)
@@ -166,7 +205,7 @@ namespace Cryo
                             2 => "Max Cool (100%)",
                             1 => "Performance / Unleashed",
                             3 => "Quiet / Silent",
-                            _ => "Balanced"
+                            _ => "Auto / Balanced"
                         };
                         results.Add($"✓ Applied '{modeName}' to HP ACPI Controller");
                         return true;

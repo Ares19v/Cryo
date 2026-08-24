@@ -293,7 +293,7 @@ function FansPage() {
                 animate={{ scale: 1 }}
                 className="text-2xl font-extrabold text-[#0072FF]"
               >
-                {fanSpeed}%
+                {fanSpeed === 0 ? 'Auto' : `${fanSpeed}%`}
               </motion.span>
             </div>
 
@@ -304,16 +304,18 @@ function FansPage() {
             />
 
             <div className="flex justify-between text-xs text-slate-300">
+              <span>🤖 Auto (0%)</span>
               <span>🌙 Silent (20%)</span>
               <span>⚖️ Balanced (50%)</span>
               <span>🔥 Turbo (80%)</span>
-              <span>❄️ Max RPM (100%)</span>
+              <span>❄️ Max (100%)</span>
             </div>
           </div>
 
           {/* Fan Speed Presets */}
           <div className="flex gap-2">
             {[
+              { label: '🤖 Auto', value: 0 },
               { label: '🌙 Silent', value: 20 },
               { label: '⚖️ Balanced', value: 50 },
               { label: '🔥 Performance', value: 80 },
