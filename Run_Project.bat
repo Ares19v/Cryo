@@ -50,9 +50,12 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-:: Sync UI dist into output folder
+:: Sync UI dist and OmenMon into output folder
 if not exist "bin\Debug\net8.0-windows\ui" mkdir "bin\Debug\net8.0-windows\ui"
 xcopy /E /I /Y "ui\dist" "bin\Debug\net8.0-windows\ui\dist" >nul 2>&1
+
+if not exist "bin\Debug\net8.0-windows\OmenMon" mkdir "bin\Debug\net8.0-windows\OmenMon"
+xcopy /E /I /Y "bin\OmenMon" "bin\Debug\net8.0-windows\OmenMon" >nul 2>&1
 
 :: ── Step 3: Launch Native App ────────────────────────────────────────────────
 echo.
