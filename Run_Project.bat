@@ -1,33 +1,62 @@
 @echo off
-SETLOCAL EnableDelayedExpansion
+setlocal EnableDelayedExpansion
+title Cryo Control Center — Launcher
 
-echo ❄️  CRYO CONTROL CENTER - LAUNCHER ❄️
-echo -------------------------------------
+echo.
+echo  ================================================
+echo    ❄️  CRYO CONTROL CENTER - LAUNCHER ❄️
+echo  ================================================
+echo.
 
-:: 1. Build UI
-echo [1/3] Building UI assets...
+:: ── Step 0: Check for Administrator Elevation ────────────────────────────────
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [INFO] Requesting Administrator privileges for kernel hardware access...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    exit /b
+)
+
+echo [✓] Running with Administrator Privileges.
+echo.
+
+:: ── Step 1: Build React UI ───────────────────────────────────────────────────
+echo [1/3] Building React UI assets...
 cd ui
-call npm install --quiet
+if not exist "node_modules" (
+    echo [INFO] Installing UI dependencies...
+    call npm install --quiet
+)
 call npm run build
-if %ERRORLEVEL% NEQ 0 (
+if %errorlevel% neq 0 (
     echo [!] UI Build failed.
     pause
-    exit /b %ERRORLEVEL%
+    exit /b %errorlevel%
 )
 cd ..
 
-:: 2. Build C# App
-echo [2/3] Building C# backend...
+:: ── Step 2: Build .NET Host ──────────────────────────────────────────────────
+echo.
+echo [2/3] Building .NET 8 WPF Host...
 dotnet build -c Debug
-if %ERRORLEVEL% NEQ 0 (
+if %errorlevel% neq 0 (
     echo [!] .NET Build failed.
     pause
-    exit /b %ERRORLEVEL%
+    exit /b %errorlevel%
 )
 
-:: 3. Launch
-echo [3/3] Launching Cryo...
-start "" "bin\Debug\net8.0-windows\Cryo.exe"
+:: Sync UI dist into output folder
+if not exist "bin\Debug\net8.0-windows\ui" mkdir "bin\Debug\net8.0-windows\ui"
+xcopy /E /I /Y "ui\dist" "bin\Debug\net8.0-windows\ui\dist" >nul 2>&1
 
-echo Launching successful.
+:: ── Step 3: Launch Native App ────────────────────────────────────────────────
+echo.
+echo [3/3] Launching Cryo Desktop Application...
+start "" "%~dp0bin\Debug\net8.0-windows\Cryo.exe"
+
+echo.
+echo  ================================================
+echo   ❄️  Cryo is running with Live Kernel Telemetry!
+echo   Web Bridge: http://localhost:5050/api/telemetry
+echo  ================================================
+echo.
 pause

@@ -9,14 +9,19 @@ namespace Cryo
     public partial class MainWindow : Window
     {
         private HardwareManager _hardwareManager;
+        private LocalHttpBridge _httpBridge;
 
         public MainWindow()
         {
             InitializeComponent();
             _hardwareManager = new HardwareManager();
             _hardwareManager.StartMonitoring();
+
+            // Start HTTP bridge for external browsers / tools
+            _httpBridge = new LocalHttpBridge(_hardwareManager, 5050);
+            _httpBridge.Start();
             
-            // Push telemetry to the UI every 2 seconds
+            // Push telemetry to the WebView2 UI whenever hardware updates
             _hardwareManager.PropertyChanged += (_, e) => SendTelemetry();
 
             InitializeAsync();
@@ -36,8 +41,17 @@ namespace Cryo
                 string distFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui", "dist");
                 if (!Directory.Exists(distFolder))
                 {
-                    MessageBox.Show($"UI folder not found:\n{distFolder}", "Cryo Error");
-                    return;
+                    // Fallback to project root ui/dist if run from IDE
+                    string altDist = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "ui", "dist"));
+                    if (Directory.Exists(altDist))
+                    {
+                        distFolder = altDist;
+                    }
+                    else
+                    {
+                        MessageBox.Show($"UI folder not found:\n{distFolder}", "Cryo Error");
+                        return;
+                    }
                 }
 
                 // Serve local files via virtual host (bypasses file:// UAC restrictions)
@@ -106,7 +120,6 @@ namespace Cryo
             {
                 try
                 {
-                    // Build sensor arrays
                     var temps  = new System.Collections.Generic.List<object>();
                     var fans   = new System.Collections.Generic.List<object>();
                     var loads  = new System.Collections.Generic.List<object>();
@@ -149,6 +162,7 @@ namespace Cryo
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+            _httpBridge?.Stop();
             _hardwareManager?.Close();
         }
     }
