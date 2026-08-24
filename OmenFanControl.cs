@@ -19,12 +19,6 @@ namespace Cryo
             _lastRequestedPercentage = percentage;
             var results = new List<string>();
 
-            // If percentage == 0, it represents Factory AUTO mode
-            if (percentage == 0)
-            {
-                StopHeartbeat();
-            }
-
             // Strategy 1: Use embedded OmenMon engine if available
             string omenMonPath = FindOmenMonBinary();
             if (!string.IsNullOrEmpty(omenMonPath))
@@ -32,7 +26,7 @@ namespace Cryo
                 bool omenMonOk = ExecuteOmenMon(omenMonPath, percentage, results);
                 if (omenMonOk)
                 {
-                    if (percentage >= 85)
+                    if (percentage > 0)
                     {
                         StartHeartbeat(omenMonPath);
                     }
@@ -124,39 +118,31 @@ namespace Cryo
                 string modeName;
                 bool isContinuousProg = false;
 
+                // Kill previous background monitor daemon if any
+                KillOmenMonDaemon();
+
                 if (percentage == 0)
                 {
-                    // Auto Mode: Exact OMEN Gaming Hub factory dynamic thermal curve
+                    // Auto Mode: Revert to HP OMEN Factory dynamic thermal curve
                     args = "-Bios FanMax=False -Prog Default";
                     modeName = "🤖 OMEN Auto (Factory BIOS Curve)";
                     isContinuousProg = true;
                 }
-                else if (percentage >= 85)
+                else if (percentage >= 95)
                 {
+                    // Max Cool Turbo: Lock all fans at full output (5500+ RPM)
                     args = "-Bios FanMax=True";
-                    modeName = "❄️ Max Cool (100% Turbo)";
-                }
-                else if (percentage <= 30)
-                {
-                    args = "-Bios FanMax=False -Prog Silent";
-                    modeName = "🌙 Silent Profile (Dynamic Curve)";
-                    isContinuousProg = true;
-                }
-                else if (percentage >= 65)
-                {
-                    args = "-Bios FanMax=False -Prog Performance";
-                    modeName = "🔥 Performance Profile (Dynamic Curve)";
-                    isContinuousProg = true;
+                    modeName = "❄️ Max Cool (100% Turbo - 5500+ RPM)";
                 }
                 else
                 {
-                    args = "-Bios FanMax=False -Prog Default";
-                    modeName = "⚖️ Balanced Profile";
-                    isContinuousProg = true;
+                    // Direct Manual Constant Speed (e.g. 50% = 3800 RPM, 80% = 4800 RPM, 20% = 2700 RPM)
+                    // Level scale: 20 (2000 RPM) to 55 (5500 RPM)
+                    int level = (int)Math.Round(20.0 + (percentage / 100.0) * 35.0);
+                    int targetRpm = level * 100;
+                    args = $"-Bios FanMax=False FanLevel={level} -Ec FanLevel={level}";
+                    modeName = $"⚙️ Manual Speed: {percentage}% (≈ {targetRpm:N0} RPM)";
                 }
-
-                // Kill previous background monitor daemon if any
-                KillOmenMonDaemon();
 
                 var psi = new ProcessStartInfo
                 {
@@ -197,14 +183,25 @@ namespace Cryo
             StopHeartbeat();
             _heartbeatTimer = new Timer(_ =>
             {
-                if (_lastRequestedPercentage >= 85)
+                if (_lastRequestedPercentage > 0)
                 {
                     try
                     {
+                        string heartbeatArgs;
+                        if (_lastRequestedPercentage >= 95)
+                        {
+                            heartbeatArgs = "-Bios FanMax=True";
+                        }
+                        else
+                        {
+                            int level = (int)Math.Round(20.0 + (_lastRequestedPercentage / 100.0) * 35.0);
+                            heartbeatArgs = $"-Bios FanMax=False FanLevel={level} -Ec FanLevel={level}";
+                        }
+
                         var psi = new ProcessStartInfo
                         {
                             FileName = exePath,
-                            Arguments = "-Bios FanMax=True",
+                            Arguments = heartbeatArgs,
                             CreateNoWindow = true,
                             WindowStyle = ProcessWindowStyle.Hidden,
                             UseShellExecute = false,
@@ -218,7 +215,7 @@ namespace Cryo
                     }
                     catch { }
                 }
-            }, null, TimeSpan.FromSeconds(90), TimeSpan.FromSeconds(90));
+            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
 
         private static void StopHeartbeat()

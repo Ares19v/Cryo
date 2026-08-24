@@ -514,10 +514,10 @@ function FansPage({ isDark, soundEnabled }) {
   const dialRef = useRef(null);
 
   const presets = [
-    { label: 'Auto',     emoji: '🤖', value: 0,   desc: 'Factory BIOS Curve',          sound: 'click'  },
-    { label: 'Silent',   emoji: '🌙', value: 20,  desc: 'Quiet Acoustic Profile',       sound: 'silent' },
-    { label: 'Balanced', emoji: '⚖️', value: 50,  desc: 'Adaptive Thermal Policy',      sound: 'click'  },
-    { label: 'Turbo',    emoji: '🔥', value: 80,  desc: 'Performance Ramp',             sound: 'turbo'  },
+    { label: 'Auto',     emoji: '🤖', value: 0,   desc: 'OMEN Factory BIOS Curve',      sound: 'click'  },
+    { label: 'Silent',   emoji: '🌙', value: 20,  desc: 'Quiet 2,700 RPM Target',       sound: 'silent' },
+    { label: 'Balanced', emoji: '⚖️', value: 50,  desc: 'Medium 3,750 RPM Target',      sound: 'click'  },
+    { label: 'Turbo',    emoji: '🔥', value: 80,  desc: 'Aggressive 4,800 RPM Target',  sound: 'turbo'  },
     { label: 'Max Cool', emoji: '❄️', value: 100, desc: '100% Full Speed (5500+ RPM)',  sound: 'turbo'  },
   ];
 
@@ -529,7 +529,7 @@ function FansPage({ isDark, soundEnabled }) {
     return '#F43F5E';
   };
   const dialColor = getColor(sliderPct);
-  const estRpm = sliderPct === 0 ? '—' : Math.round(800 + (sliderPct / 100) * 4700).toLocaleString();
+  const estRpm = sliderPct === 0 ? '—' : Math.round((20.0 + (sliderPct / 100.0) * 35.0) * 100).toLocaleString();
 
   // Arc geometry
   const R = 88, CX = 110, CY = 110, startA = -220, sweepA = 260;
