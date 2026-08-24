@@ -110,6 +110,60 @@ namespace Cryo
             }
         }
 
+        private static void EnsureCustomProgramInXml(string exePath, int level)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(exePath) ?? "";
+                string xmlPath = Path.Combine(dir, "OmenMon.xml");
+                if (!File.Exists(xmlPath)) return;
+
+                var doc = new System.Xml.XmlDocument();
+                doc.Load(xmlPath);
+
+                var fanProgramsNode = doc.SelectSingleNode("//FanPrograms");
+                if (fanProgramsNode == null) return;
+
+                var existingProg = doc.SelectSingleNode("//Program[@Name='CryoCustom']");
+                if (existingProg != null)
+                {
+                    fanProgramsNode.RemoveChild(existingProg);
+                }
+
+                var newProg = doc.CreateElement("Program");
+                newProg.SetAttribute("Name", "CryoCustom");
+
+                var fanMode = doc.CreateElement("FanMode");
+                fanMode.InnerText = "Performance";
+                newProg.AppendChild(fanMode);
+
+                var gpuPower = doc.CreateElement("GpuPower");
+                gpuPower.InnerText = "Maximum";
+                newProg.AppendChild(gpuPower);
+
+                int[] temps = new int[] { 0, 30, 45, 55, 65, 75, 85, 95 };
+                foreach (int t in temps)
+                {
+                    var lvlNode = doc.CreateElement("Level");
+                    lvlNode.SetAttribute("Temperature", t.ToString("00"));
+
+                    var cpuNode = doc.CreateElement("Cpu");
+                    cpuNode.InnerText = level.ToString("00");
+                    lvlNode.AppendChild(cpuNode);
+
+                    var gpuNode = doc.CreateElement("Gpu");
+                    gpuNode.InnerText = level.ToString("00");
+                    lvlNode.AppendChild(gpuNode);
+
+                    newProg.AppendChild(lvlNode);
+                }
+
+                fanProgramsNode.AppendChild(newProg);
+                doc.Save(xmlPath);
+            }
+            catch { }
+        }
+
         private static bool ExecuteOmenMon(string exePath, int percentage, List<string> results)
         {
             try
@@ -136,12 +190,14 @@ namespace Cryo
                 }
                 else
                 {
-                    // Direct Manual Constant Speed (e.g. 50% = 3800 RPM, 80% = 4800 RPM, 20% = 2700 RPM)
+                    // Exact Manual Constant Speed (e.g. 50% = 3800 RPM, 80% = 4800 RPM, 20% = 2700 RPM)
                     // Level scale: 20 (2000 RPM) to 55 (5500 RPM)
                     int level = (int)Math.Round(20.0 + (percentage / 100.0) * 35.0);
                     int targetRpm = level * 100;
-                    args = $"-Ec FanMode=Manual FanLevel={level} -Bios FanLevel={level} FanMax=False";
+                    EnsureCustomProgramInXml(exePath, level);
+                    args = "-Bios FanMax=False -Prog CryoCustom";
                     modeName = $"⚙️ Manual Speed: {percentage}% (≈ {targetRpm:N0} RPM)";
+                    isContinuousProg = true;
                 }
 
                 var psi = new ProcessStartInfo
@@ -187,31 +243,23 @@ namespace Cryo
                 {
                     try
                     {
-                        string heartbeatArgs;
                         if (_lastRequestedPercentage >= 95)
                         {
-                            heartbeatArgs = "-Bios FanMax=True";
+                            var psi = new ProcessStartInfo
+                            {
+                                FileName = exePath,
+                                Arguments = "-Bios FanMax=True",
+                                CreateNoWindow = true,
+                                WindowStyle = ProcessWindowStyle.Hidden,
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                RedirectStandardInput = true,
+                                WorkingDirectory = Path.GetDirectoryName(exePath) ?? ""
+                            };
+                            using var proc = Process.Start(psi);
+                            proc?.WaitForExit(2000);
                         }
-                        else
-                        {
-                            int level = (int)Math.Round(20.0 + (_lastRequestedPercentage / 100.0) * 35.0);
-                            heartbeatArgs = $"-Ec FanMode=Manual FanLevel={level} -Bios FanLevel={level} FanMax=False";
-                        }
-
-                        var psi = new ProcessStartInfo
-                        {
-                            FileName = exePath,
-                            Arguments = heartbeatArgs,
-                            CreateNoWindow = true,
-                            WindowStyle = ProcessWindowStyle.Hidden,
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            RedirectStandardInput = true,
-                            WorkingDirectory = Path.GetDirectoryName(exePath) ?? ""
-                        };
-                        using var proc = Process.Start(psi);
-                        proc?.WaitForExit(2000);
                     }
                     catch { }
                 }
