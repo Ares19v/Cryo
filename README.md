@@ -1,3 +1,5 @@
+[![CI](https://github.com/Ares19v/Cryo/actions/workflows/ci.yml/badge.svg)](https://github.com/Ares19v/Cryo/actions/workflows/ci.yml)
+
 # ❄️ Cryo Control Center
 
 <p align="center">
