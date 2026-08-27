@@ -16,7 +16,6 @@
   <img src="https://img.shields.io/badge/Frontend-React%20%7C%20Vite%20%7C%20Tailwind-61DAFB?style=flat-square&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Animation-Framer%20Motion-FF4154?style=flat-square&logo=framer" alt="Framer Motion" />
   <img src="https://img.shields.io/badge/GPU-NVIDIA%20RTX%20Series-76B900?style=flat-square&logo=nvidia" alt="NVIDIA" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
 </p>
 
 ---
@@ -124,12 +123,6 @@ Built with a hybrid **React + Tailwind + Framer Motion** presentation layer host
 
 ---
 
-## 📄 License
+© 2025 Devansh Tyagi (Ares19v). All Rights Reserved.
 
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-<p align="center">
-  Crafted with precision by <strong><a href="https://github.com/Ares19v">Ares19v</a></strong> (Devansh Tyagi) · 2026
-</p>
+Unauthorized copying, modification, distribution, or use of this project or any of its components, in whole or in part, without explicit written permission from the author is strictly prohibited.
