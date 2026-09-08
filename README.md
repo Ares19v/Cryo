@@ -28,6 +28,22 @@ Built with a hybrid **React + Tailwind + Framer Motion** presentation layer host
 
 ---
 
+## 🖥️ UI & Control Dashboard
+
+<p align="center">
+  <img src="assets/Cryo_Thermal_Monitoring_Dashboard.png" alt="Cryo System Telemetry Dashboard" width="100%" style="border-radius: 8px; border: 1px solid #30363d;" />
+  <br>
+  <em>Cryo Telemetry Dashboard: Real-time HP OMEN 16 hardware telemetry, CPU/GPU thermal sparklines, DDR5 RAM footprint, and factory thermal curve.</em>
+</p>
+
+<p align="center">
+  <img src="assets/Cryo_Fans_and_Power_Controls.png" alt="Cryo Hardware Monitor & Thermal Curve View" width="100%" style="border-radius: 8px; border: 1px solid #30363d;" />
+  <br>
+  <em>Hardware Telemetry & Acoustic Profiles: Per-core thermal junction monitoring, RTX 5060 clock/power telemetry (24.6W), and standby RAM purge controls.</em>
+</p>
+
+---
+
 ## ✨ Key Features
 
 ### 🎛️ Interactive Fan & Thermal Control
